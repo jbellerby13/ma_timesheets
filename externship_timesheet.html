@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MA Externship Timesheet</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0f1e2e;
+    --navy-mid: #1a2f45;
+    --teal: #1e8c7a;
+    --teal-light: #25b09a;
+    --gold: #d4a843;
+    --gold-light: #e8c068;
+    --cream: #f8f4ed;
+    --cream-dark: #ede8df;
+    --text: #1a1a2e;
+    --text-mid: #4a5568;
+    --text-light: #718096;
+    --white: #ffffff;
+    --error: #c0392b;
+    --success: #1e8c7a;
+    --border: #d4cfc4;
+    --shadow: 0 4px 24px rgba(15,30,46,0.10);
+    --shadow-lg: 0 12px 48px rgba(15,30,46,0.18);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ─── HEADER ─── */
+  .header {
+    background: var(--navy);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+  .header-logo {
+    width: 40px; height: 40px;
+    background: var(--teal);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .header-title {
+    font-family: 'DM Serif Display', serif;
+    color: var(--white);
+    font-size: 1.25rem;
+    letter-spacing: 0.01em;
+  }
+  .header-subtitle {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.78rem;
+    font-weight: 300;
+    margin-top: 1px;
+  }
+
+  /* ─── MAIN CONTAINER ─── */
+  .main {
+    max-width: 720px;
+    margin: 48px auto;
+    padding: 0 20px 80px;
+  }
+
+  /* ─── SECTION CARDS ─── */
+  .card {
+    background: var(--white);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .card-header {
+    background: var(--navy);
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .card-header-icon {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .card-header-text h2 {
+    font-family: 'DM Serif Display', serif;
+    color: var(--white);
+    font-size: 1.05rem;
+    font-weight: 400;
+  }
+  .card-header-text p {
+    color: rgba(255,255,255,0.55);
+    font-size: 0.78rem;
+    margin-top: 2px;
+  }
+  .card-body {
+    padding: 28px;
+  }
+
+  /* ─── FORM ELEMENTS ─── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .form-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .form-grid.full { grid-template-columns: 1fr; }
+  @media (max-width: 600px) {
+    .form-grid, .form-grid.three { grid-template-columns: 1fr; }
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+  .field label .req { color: var(--teal); margin-left: 2px; }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="date"],
+  input[type="time"],
+  input[type="number"],
+  textarea, select {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.92rem;
+    color: var(--text);
+    background: var(--cream);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(30,140,122,0.12);
+    background: var(--white);
+  }
+  textarea { resize: vertical; min-height: 90px; }
+
+  /* ─── HOURS TABLE ─── */
+  .hours-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    margin-bottom: 6px;
+  }
+  .hours-table th {
+    background: var(--navy);
+    color: rgba(255,255,255,0.8);
+    font-weight: 500;
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 10px 12px;
+    text-align: left;
+  }
+  .hours-table th:first-child { border-radius: 8px 0 0 0; }
+  .hours-table th:last-child { border-radius: 0 8px 0 0; }
+  .hours-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--cream-dark);
+    vertical-align: middle;
+  }
+  .hours-table tr:hover td { background: var(--cream); }
+  .hours-table input { background: var(--white); padding: 7px 10px; font-size: 0.85rem; }
+  .hours-table .total-row td {
+    background: var(--cream-dark);
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-bottom: none;
+    padding: 10px 12px;
+  }
+  .hours-table .total-row td:last-child { color: var(--teal); font-size: 1rem; }
+
+  .add-row-btn {
+    background: none;
+    border: 1.5px dashed var(--teal);
+    color: var(--teal);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.2s;
+  }
+  .add-row-btn:hover { background: rgba(30,140,122,0.08); }
+
+  .remove-row {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 6px;
+    border-radius: 5px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .remove-row:hover { color: var(--error); background: rgba(192,57,43,0.08); }
+
+  /* ─── DIVIDER ─── */
+  .divider {
+    height: 1px;
+    background: var(--cream-dark);
+    margin: 22px 0;
+  }
+
+  /* ─── SUBMIT BUTTON ─── */
+  .submit-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--teal);
+    color: var(--white);
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 16px rgba(30,140,122,0.3);
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .submit-btn:hover { background: var(--teal-light); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(30,140,122,0.4); }
+  .submit-btn:active { transform: translateY(0); }
+  .submit-btn:disabled { background: var(--text-light); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ─── LOADING ─── */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2.5px solid rgba(255,255,255,0.35);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── STATUS MESSAGES ─── */
+  .status-msg {
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    display: none;
+    line-height: 1.5;
+  }
+  .status-msg.error { background: #fdecea; border: 1px solid #f5c6c2; color: var(--error); display: block; }
+  .status-msg.success { background: #e6f7f4; border: 1px solid #a8ddd5; color: #14705f; display: block; }
+  .status-msg.info { background: #eef6ff; border: 1px solid #b8d8f8; color: #1a5c8a; display: block; }
+
+  /* ─── SUCCESS SCREEN ─── */
+  #success-screen {
+    display: none;
+    text-align: center;
+    padding: 60px 40px;
+  }
+  .success-icon {
+    width: 80px; height: 80px;
+    background: var(--teal);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    margin: 0 auto 24px;
+    box-shadow: 0 8px 32px rgba(30,140,122,0.3);
+  }
+  #success-screen h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.8rem;
+    color: var(--navy);
+    margin-bottom: 12px;
+  }
+  #success-screen p { color: var(--text-mid); line-height: 1.6; }
+  .next-steps {
+    background: var(--cream);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-top: 28px;
+    text-align: left;
+  }
+  .next-steps h3 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-light); margin-bottom: 12px; }
+  .step-item {
+    display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px;
+  }
+  .step-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--teal); color: white;
+    font-size: 0.75rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .step-text { font-size: 0.88rem; color: var(--text-mid); line-height: 1.4; }
+
+  /* ─── APPROVAL PAGE ─── */
+  #approval-page { display: none; }
+  .approval-banner {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+    border-radius: 16px;
+    padding: 32px;
+    color: white;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .approval-banner::before {
+    content: '';
+    position: absolute;
+    right: -20px; top: -20px;
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    background: rgba(30,140,122,0.2);
+  }
+  .approval-banner h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+  }
+  .approval-banner p { color: rgba(255,255,255,0.65); font-size: 0.9rem; line-height: 1.5; }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 500px) { .info-grid { grid-template-columns: 1fr; } }
+  .info-item { background: var(--cream); border-radius: 10px; padding: 14px 16px; }
+  .info-item .label { font-size: 0.73rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-light); margin-bottom: 4px; }
+  .info-item .value { font-size: 0.95rem; color: var(--text); font-weight: 500; }
+
+  .hours-summary {
+    background: var(--navy);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .hours-summary .label { color: rgba(255,255,255,0.6); font-size: 0.85rem; }
+  .hours-summary .big-hours {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.4rem;
+    color: var(--gold-light);
+    line-height: 1;
+  }
+  .hours-summary .unit { color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-top: 2px; }
+
+  .approval-actions { display: flex; gap: 14px; }
+  .approve-btn, .reject-btn {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.05rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .approve-btn { background: var(--teal); color: white; box-shadow: 0 4px 16px rgba(30,140,122,0.3); }
+  .approve-btn:hover { background: var(--teal-light); transform: translateY(-1px); }
+  .reject-btn { background: var(--cream-dark); color: var(--text-mid); }
+  .reject-btn:hover { background: #f0ebe0; }
+
+  .sig-field { margin-top: 20px; }
+  .sig-field label { font-size: 0.78rem; font-weight: 600; color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.07em; display: block; margin-bottom: 6px; }
+  .sig-field input { background: var(--white); }
+
+  /* ─── PAGE TOGGLE ─── */
+  #student-page { display: block; }
+
+  /* ─── HOURS BREAKDOWN ─── */
+  .hours-breakdown {
+    margin-top: 12px;
+  }
+  .hours-breakdown table {
+    width: 100%;
+    font-size: 0.85rem;
+    border-collapse: collapse;
+  }
+  .hours-breakdown th {
+    background: var(--navy-mid);
+    color: rgba(255,255,255,0.7);
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+  }
+  .hours-breakdown td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--cream-dark);
+    color: var(--text);
+  }
+  .hours-breakdown tr:last-child td { border-bottom: none; }
+  .hours-breakdown tr:nth-child(even) td { background: rgba(248,244,237,0.5); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">🏥</div>
+  <div>
+    <div class="header-title">Medical Assistant Externship</div>
+    <div class="header-subtitle">Timesheet & Supervisor Approval Portal</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!--              STUDENT SUBMISSION PAGE        -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="student-page">
+<div class="main">
+
+  <!-- Student Info -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon">👤</div>
+      <div class="card-header-text">
+        <h2>Student Information</h2>
+        <p>Your contact details and externship site</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field">
+          <label>Student Name <span class="req">*</span></label>
+          <input type="text" id="student-name" placeholder="First Last" />
+        </div>
+        <div class="field">
+          <label>Student Email <span class="req">*</span></label>
+          <input type="email" id="student-email" placeholder="student@email.com" />
+        </div>
+        <div class="field">
+          <label>Externship Site <span class="req">*</span></label>
+          <input type="text" id="site-name" placeholder="e.g. Virtua Primary Care" />
+        </div>
+        <div class="field">
+          <label>Supervisor Name <span class="req">*</span></label>
+          <input type="text" id="supervisor-name" placeholder="Site supervisor" />
+        </div>
+        <div class="field" style="grid-column: 1 / -1;">
+          <label>Supervisor Email <span class="req">*</span></label>
+          <input type="email" id="supervisor-email" placeholder="supervisor@clinic.com" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hours Log -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon">⏱</div>
+      <div class="card-header-text">
+        <h2>Hours Log</h2>
+        <p>Enter each day worked at the externship site</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="overflow-x: auto;">
+        <table class="hours-table" id="hours-table">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Date</th>
+              <th>Time In</th>
+              <th>Time Out</th>
+              <th>Break (min)</th>
+              <th>Net Hours</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="hours-body">
+            <!-- rows injected by JS -->
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="5">Total Net Hours</td>
+              <td id="total-hours">0.00</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addRow()">+ Add Day</button>
+    </div>
+  </div>
+
+  <!-- Coordinator Info -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon">🎓</div>
+      <div class="card-header-text">
+        <h2>Program Coordinator</h2>
+        <p>Completed timesheets will also be sent here</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field">
+          <label>Coordinator Name <span class="req">*</span></label>
+          <input type="text" id="coord-name" placeholder="Program coordinator" />
+        </div>
+        <div class="field">
+          <label>Coordinator Email <span class="req">*</span></label>
+          <input type="email" id="coord-email" placeholder="coordinator@school.edu" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <button class="submit-btn" id="submit-btn" onclick="submitTimesheet()">
+    <span id="submit-label">Submit Timesheet for Approval</span>
+    <div class="spinner" id="submit-spinner"></div>
+    <span id="submit-arrow">→</span>
+  </button>
+  <div class="status-msg" id="submit-status"></div>
+
+  <!-- Success Screen -->
+  <div id="success-screen">
+    <div class="success-icon">✓</div>
+    <h2>Timesheet Submitted!</h2>
+    <p>Your timesheet has been sent to your supervisor for approval.<br>You'll receive a copy once they sign off.</p>
+    <div class="next-steps">
+      <h3>What happens next</h3>
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-text">Your supervisor receives an email with a secure approval link</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-text">They review your hours and sign off online — no login required</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-text">Once approved, you and the program coordinator both receive a confirmation</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!--              SUPERVISOR APPROVAL PAGE       -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="approval-page">
+<div class="main">
+
+  <div class="approval-banner">
+    <h1>Timesheet Approval Request</h1>
+    <p>A Medical Assistant student has submitted their externship hours for your review and signature. Please verify the hours below and approve or return for correction.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon">📋</div>
+      <div class="card-header-text">
+        <h2>Timesheet Details</h2>
+        <p>Review before approving</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="info-grid" id="approval-info">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="hours-summary">
+        <div>
+          <div class="label">Total Hours This Period</div>
+          <div class="big-hours" id="approval-total">—</div>
+          <div class="unit">hours</div>
+        </div>
+      </div>
+
+      <div class="hours-breakdown">
+        <table>
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Date</th>
+              <th>Time In</th>
+              <th>Time Out</th>
+              <th>Break</th>
+              <th>Net Hours</th>
+            </tr>
+          </thead>
+          <tbody id="approval-rows">
+            <!-- filled by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="sig-field">
+        <label>Your Name (Electronic Signature) <span class="req">*</span></label>
+        <input type="text" id="approval-sig" placeholder="Type your full name to sign" />
+      </div>
+
+      <div style="margin-top: 16px;">
+        <div class="approval-actions">
+          <button class="reject-btn" onclick="rejectTimesheet()">↩ Return for Correction</button>
+          <button class="approve-btn" onclick="approveTimesheet()">
+            <span id="approve-label">✓ Approve & Sign</span>
+            <div class="spinner" id="approve-spinner"></div>
+          </button>
+        </div>
+        <div class="status-msg" id="approval-status"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let timesheetData = null;
+
+// ─── ROUTING ─────────────────────────────────────────────────────────────────
+function init() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('approve');
+  if (token) {
+    showApprovalPage(token);
+  } else {
+    ['Monday','Tuesday','Wednesday','Thursday','Friday'].forEach(day => addRow(day));
+  }
+}
+
+// ─── HOURS TABLE ──────────────────────────────────────────────────────────────
+let rowCount = 0;
+
+function addRow(day) {
+  rowCount++;
+  const dayLabel = day || '';
+  const tbody = document.getElementById('hours-body');
+  const tr = document.createElement('tr');
+  tr.id = `row-${rowCount}`;
+  tr.innerHTML = `
+    <td style="font-weight:600;color:var(--navy);font-size:0.88rem;white-space:nowrap;padding-left:12px;">${dayLabel}</td>
+    <td><input type="date" id="date-${rowCount}" onchange="calcRow(${rowCount})" /></td>
+    <td><input type="time" id="in-${rowCount}" onchange="calcRow(${rowCount})" /></td>
+    <td><input type="time" id="out-${rowCount}" onchange="calcRow(${rowCount})" /></td>
+    <td><input type="number" id="brk-${rowCount}" min="0" max="480" step="5" placeholder="0" style="text-align:center;" oninput="calcRow(${rowCount})" /></td>
+    <td><input type="number" id="hrs-${rowCount}" step="0.25" min="0" max="24" placeholder="0.00" readonly style="background:#f0faf8;color:var(--teal);font-weight:600;" /></td>
+    <td><button class="remove-row" onclick="removeRow(${rowCount})" title="Remove">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function removeRow(id) {
+  const row = document.getElementById(`row-${id}`);
+  if (row) row.remove();
+  updateTotal();
+}
+
+function calcRow(id) {
+  const inEl = document.getElementById(`in-${id}`);
+  const outEl = document.getElementById(`out-${id}`);
+  const brkEl = document.getElementById(`brk-${id}`);
+  const hrsEl = document.getElementById(`hrs-${id}`);
+  if (inEl.value && outEl.value) {
+    const [ih, im] = inEl.value.split(':').map(Number);
+    const [oh, om] = outEl.value.split(':').map(Number);
+    let mins = (oh * 60 + om) - (ih * 60 + im);
+    if (mins < 0) mins += 24 * 60;
+    const breakMins = Math.min(parseFloat(brkEl.value) || 0, mins);
+    const netMins = Math.max(0, mins - breakMins);
+    hrsEl.value = (netMins / 60).toFixed(2);
+  } else {
+    hrsEl.value = '';
+  }
+  updateTotal();
+}
+
+function updateTotal() {
+  let total = 0;
+  document.querySelectorAll('[id^="hrs-"]').forEach(el => {
+    total += parseFloat(el.value) || 0;
+  });
+  document.getElementById('total-hours').textContent = total.toFixed(2);
+  return total;
+}
+
+function getRows() {
+  const rows = [];
+  document.querySelectorAll('#hours-body tr').forEach(tr => {
+    const id = tr.id.replace('row-', '');
+    const dayEl = tr.querySelector('td:first-child');
+    const day = dayEl ? dayEl.textContent.trim() : '';
+    const date = document.getElementById(`date-${id}`)?.value;
+    const timeIn = document.getElementById(`in-${id}`)?.value;
+    const timeOut = document.getElementById(`out-${id}`)?.value;
+    const brk = document.getElementById(`brk-${id}`)?.value;
+    const hrs = document.getElementById(`hrs-${id}`)?.value;
+    if (date || timeIn || timeOut) {
+      rows.push({ day, date, timeIn, timeOut, breakMins: parseFloat(brk) || 0, hrs: parseFloat(hrs) || 0 });
+    }
+  });
+  return rows;
+}
+
+// ─── SUBMIT ───────────────────────────────────────────────────────────────────
+async function submitTimesheet() {
+  const fields = {
+    studentName: document.getElementById('student-name').value.trim(),
+    studentEmail: document.getElementById('student-email').value.trim(),
+    siteName: document.getElementById('site-name').value.trim(),
+    supervisorName: document.getElementById('supervisor-name').value.trim(),
+    supervisorEmail: document.getElementById('supervisor-email').value.trim(),
+    coordName: document.getElementById('coord-name').value.trim(),
+    coordEmail: document.getElementById('coord-email').value.trim(),
+  };
+
+  for (const [k, v] of Object.entries(fields)) {
+    if (!v) {
+      showStatus('submit-status', 'error', 'Please fill in all required fields.');
+      return;
+    }
+  }
+
+  const rows = getRows();
+  if (rows.length === 0 || rows.every(r => !r.date)) {
+    showStatus('submit-status', 'error', 'Please enter at least one day of hours.');
+    return;
+  }
+
+  const totalHrs = updateTotal();
+
+  // Build timesheet object — encoded into a URL token (base64)
+  const data = { ...fields, rows, totalHrs, submittedAt: new Date().toISOString() };
+  const token = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  const approvalUrl = `${window.location.href.split('?')[0]}?approve=${token}`;
+
+  setBtnLoading(true);
+  showStatus('submit-status', 'info', 'Sending approval request to supervisor...');
+
+  try {
+    // Use Claude API to generate the approval email content
+    const emailPrompt = `You are helping send a Medical Assistant externship timesheet approval email.
+
+Student: ${fields.studentName}
+Site: ${fields.siteName}
+Total Hours: ${totalHrs}
+Supervisor: ${fields.supervisorName}
+Approval Link: ${approvalUrl}
+
+Write a SHORT, professional email body (plain text, no subject line) from the externship program asking the supervisor to review and approve the student's hours using the link above. Keep it under 100 words. Be warm but brief.`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: emailPrompt }]
+      })
+    });
+
+    const result = await resp.json();
+    const emailBody = result.content?.[0]?.text || '';
+
+    // Show success with the approval link (in a real deployment, this would trigger an actual email via a backend)
+    setBtnLoading(false);
+    document.getElementById('submit-btn').style.display = 'none';
+    document.getElementById('submit-status').style.display = 'none';
+
+    const successScreen = document.getElementById('success-screen');
+    successScreen.style.display = 'block';
+
+    // Show the approval link for demo / copy purposes
+    successScreen.innerHTML += `
+      <div class="next-steps" style="margin-top:20px; text-align:left;">
+        <h3>📋 Supervisor Approval Link</h3>
+        <p style="font-size:0.82rem; color:var(--text-mid); margin:8px 0 10px;">In production this is emailed automatically. For now, copy and share this link with your supervisor:</p>
+        <div style="background:var(--white); border:1.5px solid var(--border); border-radius:8px; padding:10px 14px; font-size:0.78rem; color:var(--teal); word-break:break-all; font-family:monospace; cursor:pointer;" onclick="copyLink('${approvalUrl}')" title="Click to copy">
+          ${approvalUrl.length > 100 ? approvalUrl.substring(0, 97) + '...' : approvalUrl}
+        </div>
+        <div style="margin-top:8px; font-size:0.78rem; color:var(--text-light);">Click the link above to copy it</div>
+      </div>
+      <div class="next-steps" style="margin-top:16px; text-align:left;">
+        <h3>✉️ Generated Email Content</h3>
+        <p style="font-size:0.85rem; color:var(--text-mid); white-space:pre-wrap; margin-top:8px;">${emailBody}</p>
+      </div>
+    `;
+
+  } catch (err) {
+    setBtnLoading(false);
+    showStatus('submit-status', 'error', 'Something went wrong. Please try again.');
+  }
+}
+
+function copyLink(url) {
+  navigator.clipboard.writeText(url).then(() => alert('Link copied to clipboard!'));
+}
+
+// ─── APPROVAL PAGE ────────────────────────────────────────────────────────────
+function showApprovalPage(token) {
+  document.getElementById('student-page').style.display = 'none';
+  document.getElementById('approval-page').style.display = 'block';
+
+  try {
+    const data = JSON.parse(decodeURIComponent(escape(atob(token))));
+    timesheetData = { ...data, token };
+
+    // Populate info grid
+    const infoGrid = document.getElementById('approval-info');
+    infoGrid.innerHTML = `
+      <div class="info-item"><div class="label">Student</div><div class="value">${data.studentName}</div></div>
+      <div class="info-item"><div class="label">Student Email</div><div class="value">${data.studentEmail}</div></div>
+      <div class="info-item"><div class="label">Externship Site</div><div class="value">${data.siteName}</div></div>
+      <div class="info-item"><div class="label">Submitted</div><div class="value">${new Date(data.submittedAt).toLocaleDateString()}</div></div>
+    `;
+
+    document.getElementById('approval-total').textContent = parseFloat(data.totalHrs).toFixed(2);
+    // Populate rows
+    const tbody = document.getElementById('approval-rows');
+    tbody.innerHTML = '';
+    (data.rows || []).forEach(r => {
+      if (!r.date) return;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight:600;">${r.day || '—'}</td>
+        <td>${formatDate(r.date)}</td>
+        <td>${formatTime(r.timeIn)}</td>
+        <td>${formatTime(r.timeOut)}</td>
+        <td>${r.breakMins ? r.breakMins + ' min' : '—'}</td>
+        <td style="font-weight:600;color:var(--teal);">${r.hrs.toFixed(2)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+  } catch (e) {
+    showStatus('approval-status', 'error', 'This approval link appears to be invalid or expired.');
+  }
+}
+
+async function approveTimesheet() {
+  const sig = document.getElementById('approval-sig').value.trim();
+  if (!sig) {
+    showStatus('approval-status', 'error', 'Please type your name to electronically sign the timesheet.');
+    return;
+  }
+
+  document.getElementById('approve-label').style.display = 'none';
+  document.getElementById('approve-spinner').style.display = 'block';
+
+  try {
+    const data = timesheetData;
+    const approvedAt = new Date().toLocaleString();
+
+    // Generate approval confirmation via Claude
+    const prompt = `Write a brief approval confirmation message (2–3 sentences, plain text) confirming that ${sig} (supervisor at ${data.siteName}) has approved ${data.studentName}'s externship timesheet totaling ${data.totalHrs} hours. Mention that a copy has been sent to the student and program coordinator.`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const result = await resp.json();
+    const confirmText = result.content?.[0]?.text || 'Timesheet approved successfully.';
+
+    document.getElementById('approve-label').style.display = 'block';
+    document.getElementById('approve-spinner').style.display = 'none';
+
+    // Replace card body with success
+    document.querySelector('#approval-page .card-body').innerHTML = `
+      <div style="text-align:center; padding: 32px 0;">
+        <div style="width:70px;height:70px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px;box-shadow:0 6px 24px rgba(30,140,122,0.3);">✓</div>
+        <h2 style="font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);margin-bottom:10px;">Timesheet Approved</h2>
+        <p style="color:var(--text-mid);line-height:1.6;max-width:420px;margin:0 auto 20px;">${confirmText}</p>
+        <div style="background:var(--cream);border-radius:10px;padding:16px 20px;text-align:left;max-width:400px;margin:0 auto;">
+          <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-light);margin-bottom:10px;">Approval Record</div>
+          <div style="font-size:0.87rem;color:var(--text-mid);line-height:1.8;">
+            <strong>Signed by:</strong> ${sig}<br>
+            <strong>Approved at:</strong> ${approvedAt}<br>
+            <strong>Student:</strong> ${data.studentName}<br>
+            <strong>Total hours:</strong> ${parseFloat(data.totalHrs).toFixed(2)}
+          </div>
+        </div>
+      </div>
+    `;
+
+  } catch (err) {
+    document.getElementById('approve-label').style.display = 'block';
+    document.getElementById('approve-spinner').style.display = 'none';
+    showStatus('approval-status', 'error', 'Something went wrong. Please try again.');
+  }
+}
+
+function rejectTimesheet() {
+  const reason = prompt('Please briefly explain what needs to be corrected (this will be shown to the student):');
+  if (reason === null) return;
+  document.querySelector('#approval-page .card-body').innerHTML = `
+    <div style="text-align:center;padding:32px 0;">
+      <div style="width:70px;height:70px;background:#e67e22;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px;">↩</div>
+      <h2 style="font-family:'DM Serif Display',serif;color:var(--navy);margin-bottom:10px;">Returned for Correction</h2>
+      <p style="color:var(--text-mid);max-width:400px;margin:0 auto;">The student has been notified that their timesheet needs to be corrected before approval.</p>
+      ${reason ? `<div style="background:var(--cream);border-radius:10px;padding:14px 18px;margin:20px auto;max-width:400px;text-align:left;font-size:0.88rem;color:var(--text-mid);"><strong>Reason given:</strong> ${reason}</div>` : ''}
+    </div>
+  `;
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function showStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = `status-msg ${type}`;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function setBtnLoading(loading) {
+  const btn = document.getElementById('submit-btn');
+  const spinner = document.getElementById('submit-spinner');
+  const arrow = document.getElementById('submit-arrow');
+  const label = document.getElementById('submit-label');
+  btn.disabled = loading;
+  spinner.style.display = loading ? 'block' : 'none';
+  arrow.style.display = loading ? 'none' : 'inline';
+  label.textContent = loading ? 'Sending to supervisor...' : 'Submit Timesheet for Approval';
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const [y, m, day] = d.split('-');
+  return `${m}/${day}/${y}`;
+}
+
+function formatTime(t) {
+  if (!t) return '—';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hr = h % 12 || 12;
+  return `${hr}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

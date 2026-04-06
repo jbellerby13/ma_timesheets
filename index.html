@@ -627,6 +627,11 @@
         <input type="text" id="approval-sig" placeholder="Type your full name to sign" />
       </div>
 
+      <div class="sig-field" style="margin-top:16px;">
+        <label>Supervisor Notes <span style="font-size:0.72rem;color:var(--text-light);font-weight:400;text-transform:none;letter-spacing:0;">(optional — visible to student and coordinator)</span></label>
+        <textarea id="supervisor-notes" placeholder="Add any comments, concerns, or corrections needed here..." style="min-height:100px;"></textarea>
+      </div>
+
       <div style="margin-top: 16px;">
         <div class="approval-actions">
           <button class="reject-btn" onclick="rejectTimesheet()">↩ Return for Correction</button>
@@ -745,6 +750,24 @@ function getRows() {
   return rows;
 }
 
+// ─── SUPABASE CONFIG ─────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://kekcernztojfjknyquiv.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtla2Nlcm56dG9qZmprbnlxdWl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MTA0MTAsImV4cCI6MjA5MTA4NjQxMH0.1EOlhuCnH0NTywKrtxlDfmX8T0-lyjKk8JiuvF1XzVQ';
+
+async function saveToSupabase(record) {
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/timesheets`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(record)
+  });
+  if (!resp.ok) throw new Error('Supabase save failed');
+}
+
 // ─── SUBMIT ───────────────────────────────────────────────────────────────────
 async function submitTimesheet() {
   const fields = {
@@ -783,22 +806,52 @@ async function submitTimesheet() {
   const approvalUrl = `${window.location.href.split('?')[0]}?approve=${token}`;
 
   setBtnLoading(true);
-  showStatus('submit-status', 'info', 'Generating approval link...');
+  showStatus('submit-status', 'info', 'Saving and sending approval request...');
 
   try {
-    const emailBody = `Dear ${fields.supervisorName},
+    // Get date range from submitted rows
+    const dates = rows.filter(r => r.date).map(r => r.date).sort();
+    const weekLabel = dates.length > 0
+      ? `${formatDate(dates[0])} – ${formatDate(dates[dates.length-1])}`
+      : new Date().toLocaleDateString();
 
-I hope this message finds you well. ${fields.studentName} has submitted their Medical Assistant externship hours from ${fields.siteName} totaling ${totalHrs} hours for your review and approval.
+    // Save to Supabase
+    await saveToSupabase({
+      student_name: fields.studentName,
+      student_email: fields.studentEmail,
+      site_name: fields.siteName,
+      supervisor_name: fields.supervisorName,
+      supervisor_email: fields.supervisorEmail,
+      coord_name: fields.coordName,
+      coord_email: fields.coordEmail,
+      total_hrs: parseFloat(totalHrs),
+      approval_url: approvalUrl,
+      status: 'Pending',
+      supervisor_notes: '',
+      rows_data: JSON.stringify(rows),
+      week_label: weekLabel
+    });
 
-Please click the link below to review the timesheet and provide your electronic signature:
+    // Send to Power Automate
+    const POWER_AUTOMATE_URL = 'https://default5047927622324e0ea71660e33f630d.79.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/bc4863c1a5234a27848a25ece8efd195/triggers/manual/paths/invoke?api-version=1';
 
-${approvalUrl}
-
-Thank you for your time and support of our students.
-
-Sincerely,
-${fields.coordName}
-MA Externship Program Coordinator`;
+    try {
+      await fetch(POWER_AUTOMATE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentName: fields.studentName,
+          studentEmail: fields.studentEmail,
+          siteName: fields.siteName,
+          supervisorName: fields.supervisorName,
+          supervisorEmail: fields.supervisorEmail,
+          coordName: fields.coordName,
+          coordEmail: fields.coordEmail,
+          totalHrs: totalHrs.toFixed(2),
+          approvalUrl: approvalUrl
+        })
+      });
+    } catch(e) { /* email failure non-fatal */ }
 
     setBtnLoading(false);
     document.getElementById('submit-btn').style.display = 'none';
@@ -809,16 +862,20 @@ MA Externship Program Coordinator`;
 
     successScreen.innerHTML += `
       <div class="next-steps" style="margin-top:20px; text-align:left;">
+        <h3>✅ Timesheet Saved</h3>
+        <p style="font-size:0.85rem; color:var(--text-mid); margin-top:8px;">Your timesheet for <strong>${weekLabel}</strong> has been saved. You can submit again next week to add more hours.</p>
+      </div>
+      <div class="next-steps" style="margin-top:16px; text-align:left;">
+        <h3>📧 Approval Request Sent</h3>
+        <p style="font-size:0.85rem; color:var(--text-mid); margin-top:8px;">An approval request has been sent to ${fields.supervisorName} at ${fields.supervisorEmail}.</p>
+      </div>
+      <div class="next-steps" style="margin-top:16px; text-align:left;">
         <h3>📋 Supervisor Approval Link</h3>
-        <p style="font-size:0.82rem; color:var(--text-mid); margin:8px 0 10px;">Copy and share this link with your supervisor:</p>
+        <p style="font-size:0.82rem; color:var(--text-mid); margin:8px 0 10px;">You can also copy and share this link directly:</p>
         <div style="background:var(--white); border:1.5px solid var(--border); border-radius:8px; padding:10px 14px; font-size:0.78rem; color:var(--teal); word-break:break-all; font-family:monospace; cursor:pointer;" onclick="copyLink('${approvalUrl}')" title="Click to copy">
           ${approvalUrl.length > 100 ? approvalUrl.substring(0, 97) + '...' : approvalUrl}
         </div>
         <div style="margin-top:8px; font-size:0.78rem; color:var(--text-light);">Click the link above to copy it</div>
-      </div>
-      <div class="next-steps" style="margin-top:16px; text-align:left;">
-        <h3>✉️ Email to Send to Supervisor</h3>
-        <p style="font-size:0.85rem; color:var(--text-mid); white-space:pre-wrap; margin-top:8px; line-height:1.7;">${emailBody}</p>
       </div>
     `;
 
@@ -885,6 +942,7 @@ async function approveTimesheet() {
 
   const data = timesheetData;
   const approvedAt = new Date().toLocaleString();
+  const notes = document.getElementById('supervisor-notes').value.trim();
   const confirmText = `This timesheet has been approved and electronically signed by ${sig} on ${approvedAt}. A record of this approval has been generated for ${data.studentName} and the program coordinator.`;
 
   document.getElementById('approve-label').style.display = 'block';
@@ -902,6 +960,7 @@ async function approveTimesheet() {
           <strong>Approved at:</strong> ${approvedAt}<br>
           <strong>Student:</strong> ${data.studentName}<br>
           <strong>Total hours:</strong> ${parseFloat(data.totalHrs).toFixed(2)}
+          ${notes ? `<br><br><strong>Supervisor notes:</strong><br>${notes}` : ''}
         </div>
       </div>
     </div>
@@ -909,14 +968,17 @@ async function approveTimesheet() {
 }
 
 function rejectTimesheet() {
-  const reason = prompt('Please briefly explain what needs to be corrected (this will be shown to the student):');
-  if (reason === null) return;
+  const notes = document.getElementById('supervisor-notes').value.trim();
+  if (!notes) {
+    showStatus('approval-status', 'error', 'Please add a note in the Supervisor Notes field explaining what needs to be corrected before returning.');
+    return;
+  }
   document.querySelector('#approval-page .card-body').innerHTML = `
     <div style="text-align:center;padding:32px 0;">
       <div style="width:70px;height:70px;background:#e67e22;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px;">↩</div>
       <h2 style="font-family:'DM Serif Display',serif;color:var(--navy);margin-bottom:10px;">Returned for Correction</h2>
       <p style="color:var(--text-mid);max-width:400px;margin:0 auto;">The student has been notified that their timesheet needs to be corrected before approval.</p>
-      ${reason ? `<div style="background:var(--cream);border-radius:10px;padding:14px 18px;margin:20px auto;max-width:400px;text-align:left;font-size:0.88rem;color:var(--text-mid);"><strong>Reason given:</strong> ${reason}</div>` : ''}
+      <div style="background:var(--cream);border-radius:10px;padding:14px 18px;margin:20px auto;max-width:400px;text-align:left;font-size:0.88rem;color:var(--text-mid);"><strong>Supervisor notes:</strong><br>${notes}</div>
     </div>
   `;
 }
@@ -943,7 +1005,8 @@ function setBtnLoading(loading) {
 function formatDate(d) {
   if (!d) return '—';
   const [y, m, day] = d.split('-');
-  return `${m}/${day}/${y}`;
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${months[parseInt(m,10)-1]} ${parseInt(day,10)}, ${y}`;
 }
 
 function formatTime(t) {

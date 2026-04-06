@@ -66,9 +66,9 @@
 
   /* ─── MAIN CONTAINER ─── */
   .main {
-    max-width: 720px;
+    max-width: 1100px;
     margin: 48px auto;
-    padding: 0 20px 80px;
+    padding: 0 24px 80px;
   }
 
   /* ─── SECTION CARDS ─── */
@@ -522,14 +522,18 @@
     <div class="card-body">
       <div class="form-grid">
         <div class="field">
-          <label>Coordinator Name <span class="req">*</span></label>
-          <input type="text" id="coord-name" placeholder="Program coordinator" />
+          <label>Select Coordinator <span class="req">*</span></label>
+          <select id="coord-select" onchange="fillCoordinator()">
+            <option value="">-- Select a coordinator --</option>
+            <option value="Jessica Bellerby|jbellerby@prismcareerinstitute.edu">Jessica Bellerby</option>
+          </select>
         </div>
         <div class="field">
-          <label>Coordinator Email <span class="req">*</span></label>
-          <input type="email" id="coord-email" placeholder="coordinator@school.edu" />
+          <label>Coordinator Email</label>
+          <input type="email" id="coord-email" placeholder="Auto-filled from selection" readonly style="background:#f0faf8;color:var(--teal);" />
         </div>
       </div>
+      <input type="hidden" id="coord-name" />
     </div>
   </div>
 
@@ -655,7 +659,20 @@ function init() {
   }
 }
 
-// ─── HOURS TABLE ──────────────────────────────────────────────────────────────
+function fillCoordinator() {
+  const sel = document.getElementById('coord-select');
+  const val = sel.value;
+  if (val) {
+    const [name, email] = val.split('|');
+    document.getElementById('coord-name').value = name;
+    document.getElementById('coord-email').value = email;
+  } else {
+    document.getElementById('coord-name').value = '';
+    document.getElementById('coord-email').value = '';
+  }
+}
+
+
 let rowCount = 0;
 
 function addRow(day) {
@@ -666,9 +683,9 @@ function addRow(day) {
   tr.id = `row-${rowCount}`;
   tr.innerHTML = `
     <td style="font-weight:600;color:var(--navy);font-size:0.88rem;white-space:nowrap;padding-left:12px;">${dayLabel}</td>
-    <td><input type="date" id="date-${rowCount}" onchange="calcRow(${rowCount})" /></td>
-    <td><input type="time" id="in-${rowCount}" onchange="calcRow(${rowCount})" /></td>
-    <td><input type="time" id="out-${rowCount}" onchange="calcRow(${rowCount})" /></td>
+    <td><input type="date" id="date-${rowCount}" oninput="calcRow(${rowCount})" /></td>
+    <td><input type="time" id="in-${rowCount}" oninput="calcRow(${rowCount})" /></td>
+    <td><input type="time" id="out-${rowCount}" oninput="calcRow(${rowCount})" /></td>
     <td><input type="number" id="brk-${rowCount}" min="0" max="480" step="5" placeholder="0" style="text-align:center;" oninput="calcRow(${rowCount})" /></td>
     <td><input type="number" id="hrs-${rowCount}" step="0.25" min="0" max="24" placeholder="0.00" readonly style="background:#f0faf8;color:var(--teal);font-weight:600;" /></td>
     <td><button class="remove-row" onclick="removeRow(${rowCount})" title="Remove">✕</button></td>
@@ -747,6 +764,11 @@ async function submitTimesheet() {
     }
   }
 
+  if (!document.getElementById('coord-select').value) {
+    showStatus('submit-status', 'error', 'Please select a program coordinator.');
+    return;
+  }
+
   const rows = getRows();
   if (rows.length === 0 || rows.every(r => !r.date)) {
     showStatus('submit-status', 'error', 'Please enter at least one day of hours.');
@@ -761,34 +783,23 @@ async function submitTimesheet() {
   const approvalUrl = `${window.location.href.split('?')[0]}?approve=${token}`;
 
   setBtnLoading(true);
-  showStatus('submit-status', 'info', 'Sending approval request to supervisor...');
+  showStatus('submit-status', 'info', 'Generating approval link...');
 
   try {
-    // Use Claude API to generate the approval email content
-    const emailPrompt = `You are helping send a Medical Assistant externship timesheet approval email.
+    const emailBody = `Dear ${fields.supervisorName},
 
-Student: ${fields.studentName}
-Site: ${fields.siteName}
-Total Hours: ${totalHrs}
-Supervisor: ${fields.supervisorName}
-Approval Link: ${approvalUrl}
+I hope this message finds you well. ${fields.studentName} has submitted their Medical Assistant externship hours from ${fields.siteName} totaling ${totalHrs} hours for your review and approval.
 
-Write a SHORT, professional email body (plain text, no subject line) from the externship program asking the supervisor to review and approve the student's hours using the link above. Keep it under 100 words. Be warm but brief.`;
+Please click the link below to review the timesheet and provide your electronic signature:
 
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 300,
-        messages: [{ role: 'user', content: emailPrompt }]
-      })
-    });
+${approvalUrl}
 
-    const result = await resp.json();
-    const emailBody = result.content?.[0]?.text || '';
+Thank you for your time and support of our students.
 
-    // Show success with the approval link (in a real deployment, this would trigger an actual email via a backend)
+Sincerely,
+${fields.coordName}
+MA Externship Program Coordinator`;
+
     setBtnLoading(false);
     document.getElementById('submit-btn').style.display = 'none';
     document.getElementById('submit-status').style.display = 'none';
@@ -796,19 +807,18 @@ Write a SHORT, professional email body (plain text, no subject line) from the ex
     const successScreen = document.getElementById('success-screen');
     successScreen.style.display = 'block';
 
-    // Show the approval link for demo / copy purposes
     successScreen.innerHTML += `
       <div class="next-steps" style="margin-top:20px; text-align:left;">
         <h3>📋 Supervisor Approval Link</h3>
-        <p style="font-size:0.82rem; color:var(--text-mid); margin:8px 0 10px;">In production this is emailed automatically. For now, copy and share this link with your supervisor:</p>
+        <p style="font-size:0.82rem; color:var(--text-mid); margin:8px 0 10px;">Copy and share this link with your supervisor:</p>
         <div style="background:var(--white); border:1.5px solid var(--border); border-radius:8px; padding:10px 14px; font-size:0.78rem; color:var(--teal); word-break:break-all; font-family:monospace; cursor:pointer;" onclick="copyLink('${approvalUrl}')" title="Click to copy">
           ${approvalUrl.length > 100 ? approvalUrl.substring(0, 97) + '...' : approvalUrl}
         </div>
         <div style="margin-top:8px; font-size:0.78rem; color:var(--text-light);">Click the link above to copy it</div>
       </div>
       <div class="next-steps" style="margin-top:16px; text-align:left;">
-        <h3>✉️ Generated Email Content</h3>
-        <p style="font-size:0.85rem; color:var(--text-mid); white-space:pre-wrap; margin-top:8px;">${emailBody}</p>
+        <h3>✉️ Email to Send to Supervisor</h3>
+        <p style="font-size:0.85rem; color:var(--text-mid); white-space:pre-wrap; margin-top:8px; line-height:1.7;">${emailBody}</p>
       </div>
     `;
 
@@ -873,52 +883,29 @@ async function approveTimesheet() {
   document.getElementById('approve-label').style.display = 'none';
   document.getElementById('approve-spinner').style.display = 'block';
 
-  try {
-    const data = timesheetData;
-    const approvedAt = new Date().toLocaleString();
+  const data = timesheetData;
+  const approvedAt = new Date().toLocaleString();
+  const confirmText = `This timesheet has been approved and electronically signed by ${sig} on ${approvedAt}. A record of this approval has been generated for ${data.studentName} and the program coordinator.`;
 
-    // Generate approval confirmation via Claude
-    const prompt = `Write a brief approval confirmation message (2–3 sentences, plain text) confirming that ${sig} (supervisor at ${data.siteName}) has approved ${data.studentName}'s externship timesheet totaling ${data.totalHrs} hours. Mention that a copy has been sent to the student and program coordinator.`;
+  document.getElementById('approve-label').style.display = 'block';
+  document.getElementById('approve-spinner').style.display = 'none';
 
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 200,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    const result = await resp.json();
-    const confirmText = result.content?.[0]?.text || 'Timesheet approved successfully.';
-
-    document.getElementById('approve-label').style.display = 'block';
-    document.getElementById('approve-spinner').style.display = 'none';
-
-    // Replace card body with success
-    document.querySelector('#approval-page .card-body').innerHTML = `
-      <div style="text-align:center; padding: 32px 0;">
-        <div style="width:70px;height:70px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px;box-shadow:0 6px 24px rgba(30,140,122,0.3);">✓</div>
-        <h2 style="font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);margin-bottom:10px;">Timesheet Approved</h2>
-        <p style="color:var(--text-mid);line-height:1.6;max-width:420px;margin:0 auto 20px;">${confirmText}</p>
-        <div style="background:var(--cream);border-radius:10px;padding:16px 20px;text-align:left;max-width:400px;margin:0 auto;">
-          <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-light);margin-bottom:10px;">Approval Record</div>
-          <div style="font-size:0.87rem;color:var(--text-mid);line-height:1.8;">
-            <strong>Signed by:</strong> ${sig}<br>
-            <strong>Approved at:</strong> ${approvedAt}<br>
-            <strong>Student:</strong> ${data.studentName}<br>
-            <strong>Total hours:</strong> ${parseFloat(data.totalHrs).toFixed(2)}
-          </div>
+  document.querySelector('#approval-page .card-body').innerHTML = `
+    <div style="text-align:center; padding: 32px 0;">
+      <div style="width:70px;height:70px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px;box-shadow:0 6px 24px rgba(30,140,122,0.3);">✓</div>
+      <h2 style="font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);margin-bottom:10px;">Timesheet Approved</h2>
+      <p style="color:var(--text-mid);line-height:1.6;max-width:420px;margin:0 auto 20px;">${confirmText}</p>
+      <div style="background:var(--cream);border-radius:10px;padding:16px 20px;text-align:left;max-width:400px;margin:0 auto;">
+        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-light);margin-bottom:10px;">Approval Record</div>
+        <div style="font-size:0.87rem;color:var(--text-mid);line-height:1.8;">
+          <strong>Signed by:</strong> ${sig}<br>
+          <strong>Approved at:</strong> ${approvedAt}<br>
+          <strong>Student:</strong> ${data.studentName}<br>
+          <strong>Total hours:</strong> ${parseFloat(data.totalHrs).toFixed(2)}
         </div>
       </div>
-    `;
-
-  } catch (err) {
-    document.getElementById('approve-label').style.display = 'block';
-    document.getElementById('approve-spinner').style.display = 'none';
-    showStatus('approval-status', 'error', 'Something went wrong. Please try again.');
-  }
+    </div>
+  `;
 }
 
 function rejectTimesheet() {

@@ -1,12 +1,11 @@
 {
-  "navigationFallback": {
-    "rewrite": "/index.html",
-    "exclude": ["/dashboard.html"]
-  },
   "routes": [
     {
-      "route": "/dashboard",
-      "rewrite": "/dashboard.html"
+      "route": "/dashboard.html",
+      "allowedRoles": ["anonymous"]
     }
-  ]
+  ],
+  "platform": {
+    "apiRuntime": "node:20"
+  }
 }

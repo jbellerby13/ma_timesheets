@@ -1,0 +1,12 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/dashboard.html"]
+  },
+  "routes": [
+    {
+      "route": "/dashboard",
+      "rewrite": "/dashboard.html"
+    }
+  ]
+}

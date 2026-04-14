@@ -753,22 +753,16 @@ function getRows() {
   return rows;
 }
 
-// ─── SUPABASE CONFIG ─────────────────────────────────────────────────────────
-const SUPABASE_URL = 'https://kekcernztojfjknyquiv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtla2Nlcm56dG9qZmprbnlxdWl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MTA0MTAsImV4cCI6MjA5MTA4NjQxMH0.1EOlhuCnH0NTywKrtxlDfmX8T0-lyjKk8JiuvF1XzVQ';
+// ─── GOOGLE SHEETS CONFIG ────────────────────────────────────────────────────
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTkjA7gwD5sjQ0I2HKV7hYgyH8yMLrgdRxhE-G-ZwcFdNQbCvrji39foLYxLOc5j-q/exec';
 
-async function saveToSupabase(record) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/timesheets`, {
+async function saveToSheets(record) {
+  await fetch(GOOGLE_SCRIPT_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Prefer': 'return=minimal'
-    },
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(record)
   });
-  if (!resp.ok) throw new Error('Supabase save failed');
 }
 
 // ─── SUBMIT ───────────────────────────────────────────────────────────────────
@@ -818,8 +812,8 @@ async function submitTimesheet() {
       ? `${formatDate(dates[0])} – ${formatDate(dates[dates.length-1])}`
       : new Date().toLocaleDateString();
 
-    // Save to Supabase
-    await saveToSupabase({
+    // Save to Google Sheets
+    await saveToSheets({
       student_name: fields.studentName,
       student_email: fields.studentEmail,
       site_name: fields.siteName,
@@ -1190,10 +1184,9 @@ function dbLogin() {
 async function dbLoad() {
   document.getElementById('db-student-list').innerHTML = '<div class="db-loading"><div class="db-spinner"></div>Loading submissions...</div>';
   try {
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/timesheets?select=*&order=created_at.desc`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-    });
-    dbData = await resp.json();
+    const resp = await fetch(`${GOOGLE_SCRIPT_URL}?action=read`);
+    const result = await resp.json();
+    dbData = result.data || [];
     dbUpdateStats();
     dbPopulateSites();
     dbRender();

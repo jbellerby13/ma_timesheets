@@ -757,11 +757,12 @@ function getRows() {
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTkjA7gwD5sjQ0I2HKV7hYgyH8yMLrgdRxhE-G-ZwcFdNQbCvrji39foLYxLOc5j-q/exec';
 
 async function saveToSheets(record) {
+  const formData = new FormData();
+  formData.append('data', JSON.stringify(record));
   await fetch(GOOGLE_SCRIPT_URL, {
     method: 'POST',
     mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(record)
+    body: formData
   });
 }
 
